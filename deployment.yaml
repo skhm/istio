@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      initContainers:
+      - args:
+        - -p
+        - "15001"
+        - -u
+        - "1337"
+        - -m
+        - REDIRECT
+        - -i
+        - '*'
+        - -x
+        - ""
+        - -b
+        - '*'
+        - -d
+        - ""
+
+        image: gcr.io/istio-release/proxy_init:1.0.0
+        imagePullPolicy: IfNotPresent
+        name: istio-init
+        resources: {}
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          privileged: true
+          
+      containers:
+      - name: hello-world
+        image: santhoshkumarhm/envoy-demo:latest
+        ports:
+        - containerPort: 8080
+      - name: envoy
+        image: envoyproxy/envoy:v1.14.1
+        volumeMounts:
+          - name: envoy-config-volume
+            mountPath: /etc/envoy-config/
+        command: ["/usr/local/bin/envoy"]
+        args: ["-c", "/etc/envoy-config/config.yaml", "--log-format", "[METADATA][%Y-%m-%d %T.%e][%t][%l][%n] %v"]
+      volumes:
+        - name: envoy-config-volume
+          configMap:
+            name: sidecar-config
+            items:
+              - key: envoy-config
+                path: config.yaml
