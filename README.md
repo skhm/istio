@@ -1,2 +1,2 @@
 # istio
-Istio hannd on
+Istio hands-on
