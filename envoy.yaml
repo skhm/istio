@@ -1,0 +1,62 @@
+static_resources:
+  
+  listeners:
+  
+  - name: "virtual"
+    address:
+      socketAddress:
+        address: '0.0.0.0'
+        portValue: 15001
+    filterChains:
+      - filters:
+          - name: "envoy.tcp_proxy"
+            config:
+              cluster: "BlackHoleCluster"
+              stat_prefix: "BlackHoleCluster"
+              access_log:
+                name: envoy.file_access_log
+                config:
+                  path: /tmp/envoy.log
+                  format: "{\"application\":\"envoy-hw\",\"type\":\"metric\",\"level\":\"info\",\"data_version\":\"2\",\"roletype\":\"hw\",\"resource\":\"BlackHoleCluster:%UPSTREAM_HOST%-%UPSTREAM_CLUSTER%-%DOWNSTREAM_REMOTE_ADDRESS%-%DOWNSTREAM_LOCAL_ADDRESS%\"}\n"
+    useOriginalDst: true
+    
+    
+    
+    
+  - name: 'inbound|healthcheck'
+    address:
+      socketAddress:
+        address: '0.0.0.0'
+        portValue: 8080
+    filterChains:
+        filters:
+          - name: 'envoy.tcp_proxy'
+            config:
+              cluster: 'inbound|healthcheck'
+              stat_prefix: 'inbound|healthcheck'
+              access_log:
+                name: envoy.file_access_log
+                config:
+                  path: /tmp/envoy1.log
+    deprecatedV1:
+      bindToPort: false
+      
+      
+  
+  clusters:
+  - name: "BlackHoleCluster"
+    connectTimeout: "1.000s"
+    
+    
+  - name: 'inbound|healthcheck'
+    connect_timeout: '10s'
+    load_assignment:
+      cluster_name: 'inbound|healthcheck'
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: '127.0.0.1'
+                portValue: 8080
+                
